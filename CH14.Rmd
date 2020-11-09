@@ -1,0 +1,133 @@
+---
+title: "CH 14: More Logistic Regression"
+output: pdf_document
+---
+
+\renewcommand{\vec}[1]{\mathbf{#1}}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.height = 4, fig.width = 6, fig.align = 'center')
+library(tidyverse) 
+library(rstanarm)
+library(rstantools)
+library(arm)
+set.seed(11062020)
+```
+
+
+### Odds Ratios
+
+If there are two outcomes, with probabilities $p$ and $1-p$, then $\frac{p}{1-p}$ is called odds.
+
+\vfill
+
+\vfill
+
+An odds ratio is the result of dividing two odds:
+
+
+
+\vfill
+
+logistic regression can be re-written as
+
+\begin{align}
+y & \sim Bernoulli\\
+\log \left( \frac{Pr[y = 1|X]}{Pr[y = 0|X]} \right)& = \beta_0 + \beta_1 x \\
+\log \left( \frac{Pr[y = 1|X]}{1-Pr[y = 1|X]} \right)& = \beta_0 + \beta_1 x \\
+\end{align}
+
+
+\vfill
+\newpage
+
+
+Furthermore, logistic regression can also re-written as
+
+\begin{align}
+y & \sim Bernoulli\\
+\log \left( \frac{Pr[y = 1|X]}{Pr[y = 0|X]} \right)& = \beta_0 + \beta_1 x \\
+\frac{Pr[y = 1|X]}{1-Pr[y = 1|X]}& = \exp \left(\beta_0 + \beta_1 x \right)\\
+\end{align}
+
+\vfill
+\vfill
+
+
+\vfill
+
+Interpretation of log odds and odds ratios can be difficult; however, interpreting the impact on probabilities requires setting other parameter values and the change is non-linear (different change in probability for a one unit change in a predictor).
+
+\vfill
+
+\newpage
+
+### Data visualization
+
+```{r}
+beer <- read_csv('http://math.montana.edu/ahoegh/Data/Brazil_cerveja.csv') %>% 
+  mutate(consumed = consumed - mean(consumed))
+
+bayes_logistic <- stan_glm(weekend ~ consumed, data = beer,
+                           family = binomial(link = "logit"), refresh = 0)
+
+beer %>% ggplot(aes(y = weekend, x = consumed)) + 
+  geom_point(alpha = .1) + 
+  geom_smooth(formula = 'y~x', method = 'loess', color = 'red', se = F) + 
+  geom_rug() + ggtitle('Weekend vs. Consumption: comparing glm and loess') + 
+  theme_bw() + xlab('Difference in consumption from average daily consumption (L)') +
+  geom_line(inherit.aes = F, data = tibble(temp = seq(-15,15, by = .1), 
+            y = plogis(coef(bayes_logistic)['(Intercept)'] + coef(bayes_logistic)['consumed']*temp)),
+             aes(x=temp, y=y), color = 'blue',lwd = 1) + 
+  labs(caption = 'red curve is LOESS fit, blue curve estimated from logistic regression')
+```
+
+\newpage
+
+### Model interpretation
+
+```{r}
+bayes_logistic
+```
+
+\vfill
+
+- (Intercept): 
+
+\vfill
+
+\vfill
+
+- consumed: 
+
+\vfill
+\vfill
+
+The last interpretation of the consumed, suggests that scaling variables can also be useful. Then you can state as consumed goes from 0 (the average) to 1 (one standard deviation greater than average) the probability of being a weekend increases from -- to --.
+
+\vfill
+
+\newpage
+
+## Residuals
+
+Just as with standard regression models, 
+
+
+\vfill
+
+
+\vfill
+
+
+\newpage
+
+```{r}
+binnedplot(predict(bayes_logistic,type = 'response'),resid(bayes_logistic),
+           xlab = 'Estimated Probability of Weekend')
+
+binnedplot(beer$consumed,resid(bayes_logistic),
+           xlab = 'Difference from average beer consumption (L)')
+
+```
+
